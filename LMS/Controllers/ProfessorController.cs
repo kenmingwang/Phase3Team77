@@ -186,18 +186,23 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentCategories(string subject, int num, string season, int year)
         {
-            /*
+            
             using (db)
             {
                 var query =
                     from p in db.Courses
                     where p.Subject == subject && p.Number == num.ToString()
                     join c in db.Classes on p.CatalogId equals c.CatalogId
-                    where c.Semester == (season + year.ToString());
+                    where c.Semester == (season + year.ToString())
+                    join e in db.AssignmentCategories on c.CId equals e.CId
 
+                    select new
+                    {
+                        name = e.Name,
+                        weight = e.Weight
+                    };
+                return Json(query.ToArray());   
             }
-            */
-            return null;
         }
 
         /// <summary>
