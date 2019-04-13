@@ -156,8 +156,18 @@ namespace LMS.Controllers
         /// <returns>The assignment contents</returns>
         public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
         {
+            var query =
+                    from p in db.Courses
+                    where p.Subject == subject && p.Number == num.ToString()
+                    join c in db.Classes on p.CatalogId equals c.CatalogId
+                    where c.Semester == (season + year.ToString())
+                    join e in db.AssignmentCategories on c.CId equals e.CId
+                    where e.Name == category
+                    join a in db.Assignments on e.AcId equals a.AcId
+                    where a.Name == asgname
+                    select a.Contents;
 
-            return Content("");
+            return Content(query.ToArray()[0]);
         }
 
 

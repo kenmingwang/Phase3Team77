@@ -109,7 +109,7 @@ namespace LMS.Controllers
     /// <returns>The JSON array</returns>
     public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
     {     
-
+        
       return Json(null);
     }
 

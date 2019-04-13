@@ -167,8 +167,47 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentsInCategory(string subject, int num, string season, int year, string category)
         {
-
-            return Json(null);
+            using (db)
+            {
+                if(category == null)
+                {
+                    var query =
+                    from p in db.Courses
+                    where p.Subject == subject && p.Number == num.ToString()
+                    join c in db.Classes on p.CatalogId equals c.CatalogId
+                    where c.Semester == (season + year.ToString())
+                    join e in db.AssignmentCategories on c.CId equals e.CId
+                    join a in db.Assignments on e.AcId equals a.AcId
+                    select new
+                    {
+                        aname = a.Name,
+                        cname = e.Name,
+                        due = a.Due,
+                        submissions = a.Submission
+                    };
+                    return Json(query.ToArray());
+                }
+                else
+                {
+                    var query =
+                    from p in db.Courses
+                    where p.Subject == subject && p.Number == num.ToString()
+                    join c in db.Classes on p.CatalogId equals c.CatalogId
+                    where c.Semester == (season + year.ToString())
+                    join e in db.AssignmentCategories on c.CId equals e.CId
+                    where e.Name == category
+                    join a in db.Assignments on e.AcId equals a.AcId
+                    select new
+                    {
+                        aname = a.Name,
+                        cname = e.Name,
+                        due = a.Due,
+                        submissions = a.Submission
+                    };
+                    return Json(query.ToArray());
+                }
+            }
+            
         }
 
 
@@ -288,8 +327,57 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult CreateAssignment(string subject, int num, string season, int year, string category, string asgname, int asgpoints, DateTime asgdue, string asgcontents)
         {
+            using (db)
+            {
+                int acid = 0;
+                int aid = 0;
+                var query =
+                  from c in db.Courses
+                  where c.Subject == subject && c.Number == num.ToString()
+                  join c2 in db.Classes on c.CatalogId equals c2.CatalogId
+                  where c2.Semester == (season + year.ToString())
+                  join c3 in db.AssignmentCategories on c2.CId equals c3.CId
+                  where c3.Name == asgname
+                  select c3.AcId;
 
-            return Json(new { success = false });
+                
+                if(query.ToArray().Count() != 0)
+                {
+                    acid = query.ToArray()[0];
+                }
+                
+
+                Assignments assg = new Assignments();
+
+                var query2 =
+                    (from a in db.Assignments
+                     orderby a.AId descending
+                     select a.AId).Take(0);
+                if(query2.ToArray().Count() != 0)
+                {
+                    aid = query2.ToArray()[0] + 1;
+                }
+                assg.AId = aid;
+                assg.AcId = acid;
+                assg.Name = asgname;
+                assg.Points = asgpoints;
+                assg.Contents = asgcontents;
+                assg.Due = asgdue;
+
+                try
+                {
+                    db.Add(assg);
+                    db.SaveChanges();
+                    return Json(new { success = true});
+                }
+                catch (Exception e)
+                {
+                    System.Diagnostics.Debug.WriteLine("----------");
+                    System.Diagnostics.Debug.WriteLine(e.Message);
+                    System.Diagnostics.Debug.WriteLine("----------");
+                    return Json(new { success = false });
+                }
+            }
         }
 
 
