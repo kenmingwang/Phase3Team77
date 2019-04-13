@@ -454,6 +454,8 @@ namespace LMS.Controllers
                 return Json(query.ToArray());
             }
         }
+        
+        //private 
 
 
         /*******End code to modify********/
