@@ -93,8 +93,6 @@ namespace LMS.Controllers
             {
                 var query =
                     from p in db.Departments
-                    join c in db.Courses
-                    on p.Subject equals c.Subject
                     select new
                     {
                         subject = p.Subject,
@@ -125,16 +123,17 @@ namespace LMS.Controllers
             using (db)
             {
                 var query =
-                    from p in db.Classes
-                    join pf in db.Users
-                    on p.UId equals pf.UId
+                    from p in db.Courses
+                    where p.Subject == subject && p.Number == number.ToString()
+                    join c in db.Classes on p.CatalogId equals c.CatalogId
+                    join pf in db.Users on c.UId equals pf.UId
                     select new
                     {
-                        season = p.Semester.Remove(p.Semester.Count() - 4),
-                        year = p.Semester.Substring(p.Semester.Count() - 4),
-                        location = p.Loc,
-                        start = p.Start,
-                        end = p.End,
+                        season = c.Semester.Remove(c.Semester.Count() - 4),
+                        year = c.Semester.Substring(c.Semester.Count() - 4),
+                        location = c.Loc,
+                        start = c.Start,
+                        end = c.End,
                         fname = pf.FName,
                         lname = pf.LName
                     };
@@ -201,10 +200,61 @@ namespace LMS.Controllers
         /// </returns>
         public IActionResult GetUser(string uid)
         {
+            using (db)
+            {
+                var query1 = from s in db.Students
+                             where s.UId == uid
+                             join u in db.Users
+                             on s.UId equals u.UId
+                             select new
+                             {
+                                 fname = u.FName,
+                                 lname = u.LName,
+                                 uid = s.UId,
+                                 department = s.Subject
 
-            return Json(new { success = false });
+                             };
+                var query2 = from s in db.Professor
+                             where s.UId == uid
+                             join u in db.Users
+                             on s.UId equals u.UId
+                             select new
+                             {
+                                 fname = u.FName,
+                                 lname = u.LName,
+                                 uid = s.UId,
+                                 department = s.Subject
+                             };
+
+                var query3 = from s in db.Administrators
+                             where s.UId == uid
+                             join u in db.Users
+                             on s.UId equals u.UId
+                             select new
+                             {
+                                 fname = u.FName,
+                                 lname = u.LName,
+                                 uid = s.UId,
+
+                             };
+                if (query1.ToArray().Count() != 0)
+                {
+                    users u = new users();
+                    //u.Students = s;
+                    u.uid = uid;
+                    u.fname = query1.ToArray()[0].fname;
+
+                }
+            }
         }
 
+          public class users
+        {
+            public string fname;
+            public string lname;
+            public string uid;
+            public string department;
+        }
 
         /*******End code to modify********/
 

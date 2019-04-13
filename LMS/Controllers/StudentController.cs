@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -67,8 +68,29 @@ namespace LMS.Controllers
     /// <returns>The JSON array</returns>
     public IActionResult GetMyClasses(string uid)
     {
-   
-      return Json(null);
+            using (db)
+            {
+                var query =
+                    from e in db.EnrollmentGrade
+                    where e.UId == uid
+                    join p in db.Classes on e.CId equals p.CId into join1
+                    from j1 in join1.DefaultIfEmpty()
+                    join c in db.Courses on j1.CatalogId equals c.CatalogId into join2
+                    from j2 in join2.DefaultIfEmpty()
+                    select new
+                    {
+                        subject = j2.Subject,
+                        number = j2.Number,
+                        name = j2.Name,
+                        season = j1.Semester.Remove(j1.Semester.Count() - 4),
+                        year = j1.Semester.Substring(j1.Semester.Count() - 4),
+                        grade = e.Grade == null ? "--" : e.Grade
+                    };
+                //System.Diagnostics.Debug.WriteLine("-------------");
+                //System.Diagnostics.Debug.WriteLine(Json(query.ToArray()));
+                //System.Diagnostics.Debug.WriteLine("-------------");
+                return Json(query.ToArray());
+            }
     }
 
     /// <summary>
@@ -129,10 +151,46 @@ namespace LMS.Controllers
     /// <returns>A JSON object containing {success = {true/false}. 
     /// false if the student is already enrolled in the class, true otherwise.</returns>
     public IActionResult Enroll(string subject, int num, string season, int year, string uid)
-    {      
+    {
+            using (db)
+            {
+                EnrollmentGrade en = new EnrollmentGrade();
+                en.UId = uid;
+                en.Grade = null;
 
-      return Json(new { success = false });
-    }
+                var query =
+                    from p in db.Courses
+                    where p.Subject == subject && p.Number == num.ToString()
+                    join c in db.Classes on p.CatalogId equals c.CatalogId
+                    where c.Semester == (season + year.ToString())
+                    select c.CId;
+
+                System.Diagnostics.Debug.WriteLine("-------------");
+                System.Diagnostics.Debug.WriteLine(query.ToArray().Count());
+                System.Diagnostics.Debug.WriteLine("-------------");
+                if (query.ToArray().Count() != 0)
+                {
+                    
+                    en.CId = query.ToArray()[0];
+                    System.Diagnostics.Debug.WriteLine("-------------");
+                    System.Diagnostics.Debug.WriteLine(en.CId);
+                    System.Diagnostics.Debug.WriteLine("-------------");
+                    db.Add(en);
+                    try
+                    {
+                        db.SaveChanges();
+                        return Json(new { success = true });
+                    }
+                    catch(Exception e)
+                    {
+                        System.Diagnostics.Debug.WriteLine(e.Message);
+                        return Json(new { success = false });
+                    }
+                }
+                
+            }
+            return Json(new { success = false });
+        }
 
 
 

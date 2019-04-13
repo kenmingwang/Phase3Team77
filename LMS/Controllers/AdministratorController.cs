@@ -124,7 +124,7 @@ namespace LMS.Controllers
                         cID = cID.Insert(0, "0");
                     }
                 }
-
+                
                 Courses c = new Courses();
                 c.CatalogId = cID;
                 c.Subject = subject;
