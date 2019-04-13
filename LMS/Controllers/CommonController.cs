@@ -243,12 +243,35 @@ namespace LMS.Controllers
                     //u.Students = s;
                     u.uid = uid;
                     u.fname = query1.ToArray()[0].fname;
-
+                    u.lname = query1.ToArray()[0].lname;
+                    u.department = query1.ToArray()[0].department;
+                    return Json(u);
+                }
+                else if (query2.ToArray().Count() != 0)
+                {
+                    users u = new users();
+                    //u.Students = s;
+                    u.uid = uid;
+                    u.fname = query2.ToArray()[0].fname;
+                    u.lname = query2.ToArray()[0].lname;
+                    u.department = query2.ToArray()[0].department;
+                    return Json(u);
+                }
+                else if (query3.ToArray().Count() != 0)
+                {
+                    users u = new users();
+                    //u.Students = s;
+                    u.uid = uid;
+                    u.fname = query3.ToArray()[0].fname;
+                    u.lname = query3.ToArray()[0].lname;
+                    //u.department = query1.ToArray()[0].department;
+                    return Json(u);
                 }
             }
+            return Json(new { success = false });
         }
 
-          public class users
+        public class users
         {
             public string fname;
             public string lname;
