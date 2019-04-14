@@ -476,7 +476,39 @@ namespace LMS.Controllers
         public IActionResult GetSubmissionsToAssignment(string subject, int num, string season, int year, string category, string asgname)
         {
 
-            return Json(null);
+            using (db)
+            {
+                var query = from course in db.Courses
+                            where course.Subject == subject && Int32.Parse(course.Number) == num
+                            join cla in db.Classes
+                            on course.CatalogId equals cla.CatalogId
+                            where season == cla.Semester.Remove(cla.Semester.Count() - 4) && year == Int32.Parse(cla.Semester.Substring(cla.Semester.Count() - 4))
+
+                            join ac in db.AssignmentCategories
+                            on cla.CId equals ac.CId
+                            where ac.Name == category
+
+                            join a in db.Assignments
+                            on ac.AcId equals a.AcId
+                            where a.Name == asgname
+
+                            join sub in db.Submission
+                            on a.AId equals sub.AId
+
+                            join u in db.Users
+                            on sub.UId equals u.UId
+                            select new
+                            {
+                                fname = u.FName,
+                                lname = u.LName,
+                                uid = u.UId,
+                                time = sub.Time,
+                                score = sub.Score
+
+                            };
+
+                return Json(query.ToArray());
+            }
         }
 
 
@@ -545,8 +577,8 @@ namespace LMS.Controllers
 
             }
         } 
-
         */
+        
         /*******End code to modify********/
 
     }
