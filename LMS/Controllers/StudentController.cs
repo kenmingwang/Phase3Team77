@@ -173,7 +173,6 @@ namespace LMS.Controllers
         public IActionResult SubmitAssignmentText(string subject, int num, string season, int year,
           string category, string asgname, string uid, string contents)
         {
-
             using (db)
             {
                 var getCid = from course in db.Courses
@@ -197,20 +196,16 @@ namespace LMS.Controllers
                                         Cid = enroll.CId
                                     };
 
-                var query = from cate in db.AssignmentCategories
-                            where cate.CId == getStudentCid.ToArray()[0].Cid
-                            select new
-                            {
-                                Acid = cate.AcId
-                            };
+                var getAid = from cate in db.AssignmentCategories
+                             where cate.CId == getStudentCid.ToArray()[0].Cid
+                             join assign in db.Assignments
+                             on cate.AcId equals assign.AcId
+                             where assign.Name == asgname
 
-
-                var Assignment = from assign in db.Assignments
-                                 where assign.AcId == query.ToArray()[0].Acid
-                                 select new
-                                 {
-                                     Aid = assign.AId
-                                 };
+                             select new
+                             {
+                                 Aid = assign.AId
+                             };
 
 
                 var studentsQuery = from stud in db.Students
@@ -218,13 +213,14 @@ namespace LMS.Controllers
                                     select stud;
 
                 var getSubmission = from submi in db.Submission
-                                    where submi.UId == uid && submi.AId == Assignment.ToArray()[0].Aid
+                                    where submi.UId == uid && submi.AId == getAid.ToArray()[0].Aid
                                     select submi;
 
                 Submission sub = new Submission();
                 sub.Time = DateTime.Now;
+
                 sub.Contents = contents;
-                sub.AId = Assignment.ToArray()[0].Aid;
+                sub.AId = getAid.ToArray()[0].Aid;
                 sub.UId = uid;
                 sub.Score = 0;
 
@@ -250,20 +246,21 @@ namespace LMS.Controllers
 
                 return Json(new { success = true });
             }
+
         }
 
 
-        /// <summary>
-        /// Enrolls a student in a class.
-        /// </summary>
-        /// <param name="subject">The department subject abbreviation</param>
-        /// <param name="num">The course number</param>
-        /// <param name="season">The season part of the semester</param>
-        /// <param name="year">The year part of the semester</param>
-        /// <param name="uid">The uid of the student</param>
-        /// <returns>A JSON object containing {success = {true/false}. 
-        /// false if the student is already enrolled in the class, true otherwise.</returns>
-        public IActionResult Enroll(string subject, int num, string season, int year, string uid)
+            /// <summary>
+            /// Enrolls a student in a class.
+            /// </summary>
+            /// <param name="subject">The department subject abbreviation</param>
+            /// <param name="num">The course number</param>
+            /// <param name="season">The season part of the semester</param>
+            /// <param name="year">The year part of the semester</param>
+            /// <param name="uid">The uid of the student</param>
+            /// <returns>A JSON object containing {success = {true/false}. 
+            /// false if the student is already enrolled in the class, true otherwise.</returns>
+            public IActionResult Enroll(string subject, int num, string season, int year, string uid)
         {
             using (db)
             {

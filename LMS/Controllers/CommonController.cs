@@ -191,7 +191,53 @@ namespace LMS.Controllers
         public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
         {
 
-            return Content("");
+            using (db)
+            {
+
+                var getCid = from course in db.Courses
+                             where course.Subject == subject && Int32.Parse(course.Number) == num
+                             join cla in db.Classes
+                             on course.CatalogId equals cla.CatalogId
+                             into courJoincla
+
+                             from c in courJoincla
+                             where season == c.Semester.Remove(c.Semester.Count() - 4) && year == Int32.Parse(c.Semester.Substring(c.Semester.Count() - 4))
+                             select new
+                             {
+                                 Cid = c.CId
+
+                             };
+
+                var getStudentCid = from enroll in db.EnrollmentGrade
+                                    where enroll.UId == uid && enroll.CId == getCid.ToArray()[0].Cid
+                                    select new
+                                    {
+                                        Cid = enroll.CId
+                                    };
+
+                var getAid = from cate in db.AssignmentCategories
+                             where cate.CId == getStudentCid.ToArray()[0].Cid
+                             join assign in db.Assignments
+                             on cate.AcId equals assign.AcId
+                             where assign.Name == asgname
+
+                             select new
+                             {
+                                 Aid = assign.AId
+                             };
+
+                var getSubmissionContents = from sub in db.Submission
+                                            where sub.AId == getAid.ToArray()[0].Aid && sub.UId == uid
+                                            select sub.Contents;
+
+
+                if (getSubmissionContents.Count() == 0)
+                {
+                    return Content("");
+                }
+
+                return Content(getSubmissionContents.ToArray()[0]);
+            }
         }
 
 
