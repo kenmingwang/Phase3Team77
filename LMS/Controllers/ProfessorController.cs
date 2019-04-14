@@ -589,10 +589,10 @@ namespace LMS.Controllers
         private void GradeUpdateClass(int cid)
         {
             int allCatWeight = 0;
-
             Dictionary<String, int[]> studentRecord = new Dictionary<string, int[]>();
             using (db)
             {
+                /* Get all the assigment cat in a class */
                 var AssCat =
                     from p in db.AssignmentCategories
                     where p.CId == cid
@@ -607,15 +607,15 @@ namespace LMS.Controllers
                 }
                 else
                 {
-                    /* iterate over every catorgy */
+                    /* Iterate over every catorgy */
                     foreach (var cat in AssCat.ToArray())
                     {
 
                         int acid = cat.AcId;
                         int catWeight = cat.Weight;
                         allCatWeight += catWeight;
-                        int catTotal = 0;
-                        int catEarned = 0;
+
+                        /* Get the assignment in each cat */
                         var Assgnm =
                             from p in db.Assignments
                             where p.AcId == acid
@@ -628,14 +628,18 @@ namespace LMS.Controllers
                             };
                         if (Assgnm.ToArray().Count() == 0) continue; //DO NOT COUNT if no Assignments
 
-
+                        /* Iterate every submission and put it into studentRecord */
                         foreach (var student in Assgnm.ToArray())
                         {
+                            int catTotal = 0;
+                            int catEarned = 0;
+                            int score = student.Score ?? default(int);
+
                             if (!studentRecord.ContainsKey(student.UId))
                             {
                                 studentRecord.Add(student.UId, new int[3]); //int[0] = earned, int[1] = total, int[2] =the Total of earned/total * Weight;
                             }
-                            int score = student.Score ?? default(int);
+                            
                             catTotal += student.Points;
                             catEarned += score == -1 ? 0 : score; //no submission
                             catTotal += studentRecord[student.UId][1];
@@ -656,12 +660,23 @@ namespace LMS.Controllers
                     foreach (var uid in studentRecord.Keys)
                     {
                         studentRecord[uid][2] = studentRecord[uid][2] * (100 / allCatWeight);
-                        
-                        //var
-                        
-                    }
-                   
+                        var getGrade =
+                            from g in db.EnrollmentGrade
+                            where g.UId == uid && g.CId == cid
+                            select g;
 
+                        getGrade.ToArray()[0].Grade = ConvertToLetter(studentRecord[uid][2]);
+                        try
+                        {
+                            db.SaveChanges();
+                        }
+                        catch (Exception e)
+                        {
+                            System.Diagnostics.Debug.WriteLine("----------");
+                            System.Diagnostics.Debug.WriteLine(e.Message);
+                            System.Diagnostics.Debug.WriteLine("----------");
+                        }
+                    }                   
                 }
             }
 
@@ -669,7 +684,54 @@ namespace LMS.Controllers
 
         private string ConvertToLetter(int v)
         {
-            throw new NotImplementedException();
+            if (93 <= v && v <= 100)
+            {
+                return "A";
+            }
+            else if (90 <= v && v < 93)
+            {
+                return "A-";
+            }
+            else if (87 <= v && v < 90)
+            {
+                return "B+";
+            }
+            else if (83 <= v && v < 87)
+            {
+                return "B";
+            }
+            else if (80 <= v && v < 83)
+            {
+                return "B-";
+            }
+            else if (77 <= v && v < 80)
+            {
+                return "C+";
+            }
+            else if (73 <= v && v < 77)
+            {
+                return "C";
+            }
+            else if (70 <= v && v < 73)
+            {
+                return "C-";
+            }
+            else if (67 <= v && v < 70)
+            {
+                return "D+";
+            }
+            else if (63 <= v && v < 67)
+            {
+                return "D";
+            }
+            else if (60 <= v && v < 63)
+            {
+                return "D-";
+            }
+            else
+            {
+                return "E";
+            }
         }
 
 
