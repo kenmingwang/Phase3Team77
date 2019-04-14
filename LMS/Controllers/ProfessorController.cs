@@ -202,7 +202,7 @@ namespace LMS.Controllers
                         aname = a.Name,
                         cname = e.Name,
                         due = a.Due,
-                        submissions = a.Submission
+                        submissions = (from t in a.Submission select a.AId).Count()
                     };
                     return Json(query.ToArray());
                 }
@@ -259,7 +259,7 @@ namespace LMS.Controllers
         {
             using (db)
             {
-                int acid = 0;
+                int acid = 1;
                 int cID = 0;
                 AssignmentCategories asc = new AssignmentCategories();
 
@@ -330,14 +330,16 @@ namespace LMS.Controllers
             using (db)
             {
                 int acid = 0;
-                int aid = 0;
+                int aid = 1;
+
+                /* Get assignment category ID*/
                 var query =
                   from c in db.Courses
                   where c.Subject == subject && c.Number == num.ToString()
                   join c2 in db.Classes on c.CatalogId equals c2.CatalogId
                   where c2.Semester == (season + year.ToString())
                   join c3 in db.AssignmentCategories on c2.CId equals c3.CId
-                  where c3.Name == asgname
+                  where c3.Name == category
                   select c3.AcId;
 
                 
@@ -352,7 +354,7 @@ namespace LMS.Controllers
                 var query2 =
                     (from a in db.Assignments
                      orderby a.AId descending
-                     select a.AId).Take(0);
+                     select a.AId).Take(1);
                 if(query2.ToArray().Count() != 0)
                 {
                     aid = query2.ToArray()[0] + 1;
@@ -366,9 +368,18 @@ namespace LMS.Controllers
 
                 try
                 {
+                    /*
+                    System.Diagnostics.Debug.WriteLine("----------");
+                    System.Diagnostics.Debug.WriteLine(assg.AId);
+                    System.Diagnostics.Debug.WriteLine(assg.AcId);
+                    System.Diagnostics.Debug.WriteLine(assg.Name);
+                    System.Diagnostics.Debug.WriteLine(assg.Points);
+                    System.Diagnostics.Debug.WriteLine(assg.Contents);
+                    System.Diagnostics.Debug.WriteLine(assg.Due);
+                    System.Diagnostics.Debug.WriteLine("----------");
+                    */
                     db.Add(assg);
                     db.SaveChanges();
-                    return Json(new { success = true});
                 }
                 catch (Exception e)
                 {
@@ -377,6 +388,41 @@ namespace LMS.Controllers
                     System.Diagnostics.Debug.WriteLine("----------");
                     return Json(new { success = false });
                 }
+
+                /* Every UID in a specific cid class */
+                var query3 =
+                    from c in db.Courses
+                    where c.Subject == subject && c.Number == num.ToString()
+                    join c2 in db.Classes on c.CatalogId equals c2.CatalogId
+                    where c2.Semester == (season + year.ToString())
+                    join en in db.EnrollmentGrade on c2.CId equals en.CId
+                    select en.UId;
+
+                         
+                foreach (String uid in query3.ToArray())
+                {
+                    Submission sb = new Submission();
+                    sb.AId = aid;
+                    sb.Contents = "";
+                    sb.UId = uid;
+                    sb.Time = DateTime.Now;
+                    sb.Score = 0;
+                    db.Add(sb);
+                    try
+                    {
+                        db.SaveChanges();                      
+                    }
+                    catch (Exception e)
+                    {
+                        System.Diagnostics.Debug.WriteLine("----------");
+                        System.Diagnostics.Debug.WriteLine("2:" + e.Message);
+                        System.Diagnostics.Debug.WriteLine("----------");
+                        return Json(new { success = false });
+                    }
+                    
+                }
+                return Json(new { success = true });
+
             }
         }
 
@@ -455,9 +501,23 @@ namespace LMS.Controllers
             }
         }
         
-        //private 
+        /*
+        private void GradeUpdate(int cid)
+        {
+            int totalEarned = 0;
+            int totalWeight = 0;
+            
+            using (db)
+            {
+                var query = 
+                    from p in db.EnrollmentGrade
+                    where p.CId == cid
+                    select 
 
+            }
+        } 
 
+        */
         /*******End code to modify********/
 
     }

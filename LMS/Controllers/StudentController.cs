@@ -174,7 +174,82 @@ namespace LMS.Controllers
           string category, string asgname, string uid, string contents)
         {
 
-            return Json(new { success = false });
+            using (db)
+            {
+                var getCid = from course in db.Courses
+                             where course.Subject == subject && Int32.Parse(course.Number) == num
+                             join cla in db.Classes
+                             on course.CatalogId equals cla.CatalogId
+                             into courJoincla
+
+                             from c in courJoincla
+                             where season == c.Semester.Remove(c.Semester.Count() - 4) && year == Int32.Parse(c.Semester.Substring(c.Semester.Count() - 4))
+                             select new
+                             {
+                                 Cid = c.CId
+
+                             };
+
+                var getStudentCid = from enroll in db.EnrollmentGrade
+                                    where enroll.UId == uid && enroll.CId == getCid.ToArray()[0].Cid
+                                    select new
+                                    {
+                                        Cid = enroll.CId
+                                    };
+
+                var query = from cate in db.AssignmentCategories
+                            where cate.CId == getStudentCid.ToArray()[0].Cid
+                            select new
+                            {
+                                Acid = cate.AcId
+                            };
+
+
+                var Assignment = from assign in db.Assignments
+                                 where assign.AcId == query.ToArray()[0].Acid
+                                 select new
+                                 {
+                                     Aid = assign.AId
+                                 };
+
+
+                var studentsQuery = from stud in db.Students
+                                    where stud.UId == uid
+                                    select stud;
+
+                var getSubmission = from submi in db.Submission
+                                    where submi.UId == uid && submi.AId == Assignment.ToArray()[0].Aid
+                                    select submi;
+
+                Submission sub = new Submission();
+                sub.Time = DateTime.Now;
+                sub.Contents = contents;
+                sub.AId = Assignment.ToArray()[0].Aid;
+                sub.UId = uid;
+                sub.Score = 0;
+
+                //Submission the_as = getSubmission.SingleOrDefault();
+                getSubmission.ToArray()[0].Contents = contents;
+                getSubmission.ToArray()[0].Time = DateTime.Now;
+
+                /*
+                if(the_as != null)
+                {
+                    the_as = sub;
+                }
+                */
+
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch (Exception e)
+                {
+                    return Json(new { success = false });
+                }
+
+                return Json(new { success = true });
+            }
         }
 
 
