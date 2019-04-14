@@ -651,15 +651,25 @@ namespace LMS.Controllers
                             studentRecord[uid][2] += ((studentRecord[uid][0] / studentRecord[uid][1]) * catWeight);
                         }
                     }
-                    /* update total percentage grade with scaling in class */
+                    /* update total percentage grade with scaling in class 
+                       and Convert percentage grade to letter grade and put in db */
                     foreach (var uid in studentRecord.Keys)
                     {
                         studentRecord[uid][2] = studentRecord[uid][2] * (100 / allCatWeight);
+                        
+                        //var
+                        
                     }
+                   
 
                 }
             }
 
+        }
+
+        private string ConvertToLetter(int v)
+        {
+            throw new NotImplementedException();
         }
 
 
