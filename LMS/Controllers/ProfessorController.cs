@@ -169,7 +169,7 @@ namespace LMS.Controllers
         {
             using (db)
             {
-                if(category == null)
+                if (category == null)
                 {
                     var query =
                     from p in db.Courses
@@ -202,12 +202,41 @@ namespace LMS.Controllers
                         aname = a.Name,
                         cname = e.Name,
                         due = a.Due,
-                        submissions = (from t in a.Submission select a.AId).Count()
+                        submissions = (from t in a.Submission select t.Score),
                     };
-                    return Json(query.ToArray());
+
+                    int submissions = 0;
+                    if (query.ToArray().Count() != 0)
+                    {
+                        foreach (int score in query.ToArray()[0].submissions)
+                        {
+                            if (score != -1)
+                            {
+                                submissions++;
+                            }
+                        }
+
+                        return Json(new[]
+                        {
+                        new
+                        {
+                        query.ToArray()[0].aname,
+                        query.ToArray()[0].cname,
+                        query.ToArray()[0].due,
+                        submissions
+                        }
+                        });
+                    }
+                    else
+                    {
+                        return Json(query.ToArray());
+                    }
+
+
+
                 }
             }
-            
+
         }
 
 
@@ -225,7 +254,7 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentCategories(string subject, int num, string season, int year)
         {
-            
+
             using (db)
             {
                 var query =
@@ -240,7 +269,7 @@ namespace LMS.Controllers
                         name = e.Name,
                         weight = e.Weight
                     };
-                return Json(query.ToArray());   
+                return Json(query.ToArray());
             }
         }
 
@@ -342,12 +371,12 @@ namespace LMS.Controllers
                   where c3.Name == category
                   select c3.AcId;
 
-                
-                if(query.ToArray().Count() != 0)
+
+                if (query.ToArray().Count() != 0)
                 {
                     acid = query.ToArray()[0];
                 }
-                
+
 
                 Assignments assg = new Assignments();
 
@@ -355,7 +384,7 @@ namespace LMS.Controllers
                     (from a in db.Assignments
                      orderby a.AId descending
                      select a.AId).Take(1);
-                if(query2.ToArray().Count() != 0)
+                if (query2.ToArray().Count() != 0)
                 {
                     aid = query2.ToArray()[0] + 1;
                 }
@@ -398,7 +427,7 @@ namespace LMS.Controllers
                     join en in db.EnrollmentGrade on c2.CId equals en.CId
                     select en.UId;
 
-                         
+
                 foreach (String uid in query3.ToArray())
                 {
                     Submission sb = new Submission();
@@ -406,11 +435,11 @@ namespace LMS.Controllers
                     sb.Contents = "";
                     sb.UId = uid;
                     sb.Time = DateTime.Now;
-                    sb.Score = 0;
+                    sb.Score = -1; //Default submission, not counted as a REAL submission
                     db.Add(sb);
                     try
                     {
-                        db.SaveChanges();                      
+                        db.SaveChanges();
                     }
                     catch (Exception e)
                     {
@@ -419,7 +448,7 @@ namespace LMS.Controllers
                         System.Diagnostics.Debug.WriteLine("----------");
                         return Json(new { success = false });
                     }
-                    
+
                 }
                 return Json(new { success = true });
 
@@ -500,7 +529,7 @@ namespace LMS.Controllers
                 return Json(query.ToArray());
             }
         }
-        
+
         /*
         private void GradeUpdate(int cid)
         {

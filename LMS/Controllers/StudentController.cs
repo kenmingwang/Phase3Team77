@@ -227,6 +227,7 @@ namespace LMS.Controllers
                 //Submission the_as = getSubmission.SingleOrDefault();
                 getSubmission.ToArray()[0].Contents = contents;
                 getSubmission.ToArray()[0].Time = DateTime.Now;
+                getSubmission.ToArray()[0].Score = 0;
 
                 /*
                 if(the_as != null)
@@ -264,9 +265,8 @@ namespace LMS.Controllers
         {
             using (db)
             {
-                EnrollmentGrade en = new EnrollmentGrade();
-                en.UId = uid;
-                en.Grade = null;
+                
+                int cid = 0;
 
                 var query =
                     from p in db.Courses
@@ -275,17 +275,38 @@ namespace LMS.Controllers
                     where c.Semester == (season + year.ToString())
                     select c.CId;
 
-                System.Diagnostics.Debug.WriteLine("-------------");
-                System.Diagnostics.Debug.WriteLine(query.ToArray().Count());
-                System.Diagnostics.Debug.WriteLine("-------------");
+                cid = query.ToArray()[0];
+                /* Generate assignments for the enrolled student */
+                var query2 =
+                    from p in db.AssignmentCategories
+                    where p.CId == cid
+                    join a in db.Assignments on p.AcId equals a.AcId
+                    select a.AId;
+
+
                 if (query.ToArray().Count() != 0)
                 {
-
+                    /* update enroll table */
+                    EnrollmentGrade en = new EnrollmentGrade();
+                    en.UId = uid;
+                    en.Grade = null;
                     en.CId = query.ToArray()[0];
-                    System.Diagnostics.Debug.WriteLine("-------------");
-                    System.Diagnostics.Debug.WriteLine(en.CId);
-                    System.Diagnostics.Debug.WriteLine("-------------");
                     db.Add(en);
+
+                    /* update submission table */
+                    foreach(int aid in query2.ToArray())
+                    {
+                        Submission sb = new Submission();
+                        sb.AId = aid;
+                        sb.UId = uid;
+                        sb.Score = -1;
+                        sb.Time = DateTime.Now;
+                        sb.Contents = "";
+                        db.Add(sb);
+                    }
+                    
+                    
+                    
                     try
                     {
                         db.SaveChanges();
