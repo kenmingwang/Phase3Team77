@@ -183,9 +183,34 @@ namespace LMS.Controllers
                         aname = a.Name,
                         cname = e.Name,
                         due = a.Due,
-                        submissions = a.Submission
+                        submissions = (from t in a.Submission select t.Score)
                     };
-                    return Json(query.ToArray());
+                    int submissions = 0;
+                    if (query.ToArray().Count() != 0)
+                    {
+                        foreach (int score in query.ToArray()[0].submissions)
+                        {
+                            if (score != -1)
+                            {
+                                submissions++;
+                            }
+                        }
+
+                        return Json(new[]
+                        {
+                        new
+                        {
+                        query.ToArray()[0].aname,
+                        query.ToArray()[0].cname,
+                        query.ToArray()[0].due,
+                        submissions
+                        }
+                        });
+                    }
+                    else
+                    {
+                        return Json(query.ToArray());
+                    }
                 }
                 else
                 {
@@ -231,9 +256,6 @@ namespace LMS.Controllers
                     {
                         return Json(query.ToArray());
                     }
-
-
-
                 }
             }
 
@@ -494,6 +516,7 @@ namespace LMS.Controllers
 
                             join sub in db.Submission
                             on a.AId equals sub.AId
+                            where sub.Score != -1
 
                             join u in db.Users
                             on sub.UId equals u.UId
@@ -563,7 +586,7 @@ namespace LMS.Controllers
         }
 
         /*
-        private void GradeUpdate(int cid)
+        private void GradeUpdateClass(int cid)
         {
             int totalEarned = 0;
             int totalWeight = 0;
@@ -577,7 +600,7 @@ namespace LMS.Controllers
 
             }
         } 
-        */
+        /*
         
         /*******End code to modify********/
 
