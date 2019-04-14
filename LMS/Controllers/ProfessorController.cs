@@ -585,23 +585,84 @@ namespace LMS.Controllers
             }
         }
 
-        /*
+
         private void GradeUpdateClass(int cid)
         {
-            int totalEarned = 0;
-            int totalWeight = 0;
-            
+            int allCatWeight = 0;
+
+            Dictionary<String, int[]> studentRecord = new Dictionary<string, int[]>();
             using (db)
             {
-                var query = 
-                    from p in db.EnrollmentGrade
+                var AssCat =
+                    from p in db.AssignmentCategories
                     where p.CId == cid
-                    select 
+                    select new
+                    {
+                        p.AcId,
+                        p.Weight
+                    };
+                if (AssCat.ToArray().Count() == 0)
+                {
+                    return;
+                }
+                else
+                {
+                    /* iterate over every catorgy */
+                    foreach (var cat in AssCat.ToArray())
+                    {
 
+                        int acid = cat.AcId;
+                        int catWeight = cat.Weight;
+                        allCatWeight += catWeight;
+                        int catTotal = 0;
+                        int catEarned = 0;
+                        var Assgnm =
+                            from p in db.Assignments
+                            where p.AcId == acid
+                            join s in db.Submission on p.AId equals s.AId
+                            select new
+                            {
+                                p.Points,
+                                s.Score,
+                                s.UId
+                            };
+                        if (Assgnm.ToArray().Count() == 0) continue; //DO NOT COUNT if no Assignments
+
+
+                        foreach (var student in Assgnm.ToArray())
+                        {
+                            if (!studentRecord.ContainsKey(student.UId))
+                            {
+                                studentRecord.Add(student.UId, new int[3]); //int[0] = earned, int[1] = total, int[2] =the Total of earned/total * Weight;
+                            }
+                            int score = student.Score ?? default(int);
+                            catTotal += student.Points;
+                            catEarned += score == -1 ? 0 : score; //no submission
+                            catTotal += studentRecord[student.UId][1];
+                            catEarned += studentRecord[student.UId][0];
+
+                            //Update value
+                            studentRecord[student.UId][0] = catEarned;
+                            studentRecord[student.UId][1] = catTotal;
+                        }
+                        /* update total percentage grade without scaling in class */
+                        foreach (var uid in studentRecord.Keys)
+                        {
+                            studentRecord[uid][2] += ((studentRecord[uid][0] / studentRecord[uid][1]) * catWeight);
+                        }
+                    }
+                    /* update total percentage grade with scaling in class */
+                    foreach (var uid in studentRecord.Keys)
+                    {
+                        studentRecord[uid][2] = studentRecord[uid][2] * (100 / allCatWeight);
+                    }
+
+                }
             }
-        } 
-        /*
-        
+
+        }
+
+
         /*******End code to modify********/
 
     }

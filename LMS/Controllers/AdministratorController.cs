@@ -124,7 +124,7 @@ namespace LMS.Controllers
                         cID = cID.Insert(0, "0");
                     }
                 }
-                
+
                 Courses c = new Courses();
                 c.CatalogId = cID;
                 c.Subject = subject;
@@ -170,13 +170,28 @@ namespace LMS.Controllers
             using (db)
             {
                 var query = from p in db.Courses
-                            where p.Subject == subject && p.Number == number.ToString()                          
+                            where p.Subject == subject && p.Number == number.ToString()
                             select p.CatalogId;
                 CatalogID = query.ToArray()[0];
 
                 var query2 = (from p in db.Classes
                               orderby p.CId descending
                               select p.CId).Take(1);
+
+
+                var getExsistingClass = from cla in db.Classes
+                                        where cla.Loc == location && ((start.TimeOfDay <= cla.Start && cla.Start <= end.TimeOfDay) || (start.TimeOfDay <= cla.End && cla.End <= end.TimeOfDay)) && (cla.Semester == season + year)
+                                        select cla;
+
+                var ifProfessorNotFree = from cla in db.Classes
+                                         where cla.UId == instructor && ((start.TimeOfDay <= cla.Start && cla.Start <= end.TimeOfDay) || (start.TimeOfDay <= cla.End && cla.End <= end.TimeOfDay)) && (cla.Semester == season + year)
+                                         select cla;
+
+
+                if (getExsistingClass.ToArray().Count() != 0 || ifProfessorNotFree.ToArray().Count() != 0)
+                {
+                    return Json(new { success = false });
+                }
 
                 if (query2.ToArray().Count() != 0)
                 {
@@ -185,13 +200,13 @@ namespace LMS.Controllers
                 }
 
                 Classes c = new Classes();
-                
+
                 c.CId = cID;
                 c.Semester = season + year.ToString();
                 c.CatalogId = CatalogID;
                 c.UId = instructor;
                 c.Loc = location;
-                c.Start = start.TimeOfDay;              
+                c.Start = start.TimeOfDay;
                 c.End = end.TimeOfDay;
 
                 db.Add(c);
@@ -207,9 +222,10 @@ namespace LMS.Controllers
                     System.Diagnostics.Debug.WriteLine("-------------");
                     return Json(new { success = false });
                 }
-                
+
             }
         }
+
     }
 
 
