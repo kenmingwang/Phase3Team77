@@ -355,9 +355,8 @@ namespace LMS.Models.LMSModels
                 entity.Property(e => e.Score).HasColumnType("int(11)");
 
                 entity.Property(e => e.Time)
-                    .HasColumnType("timestamp")
-                    .HasDefaultValueSql("'CURRENT_TIMESTAMP'")
-                    .ValueGeneratedOnAddOrUpdate();
+                    .HasColumnType("datetime");
+                    
 
                 entity.HasOne(d => d.A)
                     .WithMany(p => p.Submission)
