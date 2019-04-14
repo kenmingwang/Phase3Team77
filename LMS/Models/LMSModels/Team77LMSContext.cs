@@ -112,9 +112,7 @@ namespace LMS.Models.LMSModels
                     .HasColumnType("varchar(8192)");
 
                 entity.Property(e => e.Due)
-                    .HasColumnType("timestamp")
-                    .HasDefaultValueSql("'CURRENT_TIMESTAMP'")
-                    .ValueGeneratedOnAddOrUpdate();
+                    .HasColumnType("datetime");
 
                 entity.Property(e => e.Name)
                     .IsRequired()
