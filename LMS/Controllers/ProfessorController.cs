@@ -178,39 +178,56 @@ namespace LMS.Controllers
                     where c.Semester == (season + year.ToString())
                     join e in db.AssignmentCategories on c.CId equals e.CId
                     join a in db.Assignments on e.AcId equals a.AcId
-                    select new
-                    {
-                        aname = a.Name,
-                        cname = e.Name,
-                        due = a.Due,
-                        submissions = (from t in a.Submission select t.Score)
-                    };
-                    int submissions = 0;
+                   select new
+                   {
+                       aname = a.Name,
+                       cname = e.Name,
+                       due = a.Due,
+                       submissions = (from t in a.Submission select t.Score),
+                   };
+
+
+                    getAssgn[] arr = new getAssgn[query.ToArray().Count()];
                     if (query.ToArray().Count() != 0)
                     {
-                        foreach (int score in query.ToArray()[0].submissions)
+                        for (int i = 0; i < query.ToArray().Count(); i++)
                         {
-                            if (score != -1)
+                            int submissions = 0;
+                            if (query.ToArray()[i].submissions.Count() == 0)
                             {
-                                submissions++;
+                                getAssgn tmp = new getAssgn();
+                                tmp.aname = query.ToArray()[i].aname;
+                                tmp.cname = query.ToArray()[i].cname;
+                                tmp.due = query.ToArray()[i].due;
+                                tmp.submissions = 0;
+                                arr[i] = tmp;
+                            }
+                            else
+                            {
+                                foreach (int score in query.ToArray()[i].submissions)
+                                {
+                                    if (score != -1)
+                                    {
+                                        submissions++;
+                                    }
+                                    getAssgn tmp = new getAssgn();
+                                    tmp.aname = query.ToArray()[i].aname;
+                                    tmp.cname = query.ToArray()[i].cname;
+                                    tmp.due = query.ToArray()[i].due;
+                                    tmp.submissions = submissions;
+                                    arr[i] = tmp;
+                                }
                             }
                         }
 
-                        return Json(new[]
-                        {
-                        new
-                        {
-                        query.ToArray()[0].aname,
-                        query.ToArray()[0].cname,
-                        query.ToArray()[0].due,
-                        submissions
-                        }
-                        });
+                        return Json(arr);
+
                     }
                     else
                     {
                         return Json(query.ToArray());
                     }
+                                    
                 }
                 else
                 {
@@ -229,28 +246,43 @@ namespace LMS.Controllers
                         due = a.Due,
                         submissions = (from t in a.Submission select t.Score),
                     };
-
-                    int submissions = 0;
+ 
+                    getAssgn[] arr = new getAssgn[query.ToArray().Count()];
                     if (query.ToArray().Count() != 0)
                     {
-                        foreach (int score in query.ToArray()[0].submissions)
+                        for(int i = 0; i< query.ToArray().Count(); i++)
                         {
-                            if (score != -1)
+                            int submissions = 0;
+                            if(query.ToArray()[i].submissions.Count() == 0)
                             {
-                                submissions++;
+                                getAssgn tmp = new getAssgn();
+                                tmp.aname = query.ToArray()[i].aname;
+                                tmp.cname = query.ToArray()[i].cname;
+                                tmp.due = query.ToArray()[i].due;
+                                tmp.submissions = 0;
+                                arr[i] = tmp;
                             }
+                            else
+                            {
+                                foreach (int score in query.ToArray()[i].submissions)
+                                {
+                                    if (score != -1)
+                                    {
+                                        submissions++;
+                                    }
+                                    getAssgn tmp = new getAssgn();
+                                    tmp.aname = query.ToArray()[i].aname;
+                                    tmp.cname = query.ToArray()[i].cname;
+                                    tmp.due = query.ToArray()[i].due;
+                                    tmp.submissions = submissions;
+                                    arr[i] = tmp;
+                                }
+                            }
+                           
                         }
 
-                        return Json(new[]
-                        {
-                        new
-                        {
-                        query.ToArray()[0].aname,
-                        query.ToArray()[0].cname,
-                        query.ToArray()[0].due,
-                        submissions
-                        }
-                        });
+                        return Json(arr);
+                        
                     }
                     else
                     {
@@ -336,12 +368,19 @@ namespace LMS.Controllers
                 asc.CId = cID;
                 var query3 =
                     from p in db.AssignmentCategories
+                    where p.CId == cID
                     select p.Name;
 
                 foreach (String n in query3.ToArray())
                 {
                     if (n == category)
+                    {
+                        System.Diagnostics.Debug.WriteLine("----------");
+                        System.Diagnostics.Debug.WriteLine(n);
+                        System.Diagnostics.Debug.WriteLine("----------");
                         return Json(new { success = false });
+                    }
+                        
                 }
 
                 asc.Name = category;
@@ -382,7 +421,7 @@ namespace LMS.Controllers
             {
                 int acid = 0;
                 int aid = 1;
-
+                int cid = 0;
                 /* Get assignment category ID*/
                 var query =
                   from c in db.Courses
@@ -391,12 +430,17 @@ namespace LMS.Controllers
                   where c2.Semester == (season + year.ToString())
                   join c3 in db.AssignmentCategories on c2.CId equals c3.CId
                   where c3.Name == category
-                  select c3.AcId;
+                  select new
+                  {
+                      c3.AcId,
+                      c2.CId
+                  };
 
 
                 if (query.ToArray().Count() != 0)
                 {
-                    acid = query.ToArray()[0];
+                    acid = query.ToArray()[0].AcId;
+                    cid = query.ToArray()[0].CId;
                 }
 
 
@@ -472,6 +516,7 @@ namespace LMS.Controllers
                     }
 
                 }
+                GradeUpdateClass(cid);
                 return Json(new { success = true });
 
             }
@@ -549,8 +594,45 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult GradeSubmission(string subject, int num, string season, int year, string category, string asgname, string uid, int score)
         {
+            using (db)
+            {
+                var query2 =
+                    from c in db.Courses
+                    where c.Number == num.ToString() && c.Subject == subject
+                    join c2 in db.Classes on c.CatalogId equals c2.CatalogId
+                    select c2.CId;
 
-            return Json(new { success = true });
+                var query =
+                    from c in db.Courses
+                    where c.Number == num.ToString() && c.Subject == subject
+                    join c2 in db.Classes on c.CatalogId equals c2.CatalogId
+                    join asc in db.AssignmentCategories on c2.CId equals asc.CId
+                    join ass in db.Assignments on asc.AcId equals ass.AcId
+                    join Submission in db.Submission on ass.AId equals Submission.AId
+                    where Submission.UId == uid
+                    select Submission;
+
+                if(query.ToArray().Count() != 0)
+                {
+                    query.ToArray()[0].Score = score;
+                    try
+                    {
+                        db.SaveChanges();
+                        GradeUpdateClass(query2.ToArray()[0]);
+                        return Json(new { success = true });
+                    }
+                    catch (Exception e)
+                    {
+                        System.Diagnostics.Debug.WriteLine("----------");
+                        System.Diagnostics.Debug.WriteLine(e.Message);
+                        System.Diagnostics.Debug.WriteLine("----------");
+                    }
+                    
+                }
+                
+            }
+           
+            return Json(new { success = false });
         }
 
 
@@ -734,6 +816,13 @@ namespace LMS.Controllers
             }
         }
 
+        public class getAssgn
+        {
+            public string aname;
+            public string cname;
+            public DateTime due;
+            public int submissions;
+        }
 
         /*******End code to modify********/
 
