@@ -443,7 +443,18 @@ namespace LMS.Controllers
                     cid = query.ToArray()[0].CId;
                 }
 
+                /* Check for duplicate assgn name */
+                var check =
+                    from a in db.Assignments
+                    where a.AcId == acid
+                    select a.Name;
 
+                foreach(String n in check.ToArray())
+                {
+                    if(n == asgname)
+                        return Json(new { success = false });
+
+                }
                 Assignments assg = new Assignments();
 
                 var query2 =
@@ -672,7 +683,7 @@ namespace LMS.Controllers
 
         private void GradeUpdateClass(int cid)
         {
-            int allCatWeight = 0;
+            double allCatWeight = 0;
             Dictionary<String, double[]> studentRecord = new Dictionary<string, double[]>();
             using (db)
             {
@@ -696,7 +707,7 @@ namespace LMS.Controllers
                     {
 
                         int acid = cat.AcId;
-                        int catWeight = cat.Weight;
+                        double catWeight = cat.Weight;
                         allCatWeight += catWeight;
 
                         /* Get the assignment in each cat */
@@ -737,11 +748,13 @@ namespace LMS.Controllers
                         foreach (var uid in studentRecord.Keys)
                         {
                             studentRecord[uid][2] += ((studentRecord[uid][0] / studentRecord[uid][1]) * catWeight);
+                            
                             System.Diagnostics.Debug.WriteLine("----------");
                             System.Diagnostics.Debug.WriteLine(uid + ": "  + cat.AcId + " : "+ studentRecord[uid][2]);
                             System.Diagnostics.Debug.WriteLine("earned: " + studentRecord[uid][0]);
                             System.Diagnostics.Debug.WriteLine("total: " + studentRecord[uid][1]);
                             System.Diagnostics.Debug.WriteLine("----------");
+                            
                             studentRecord[uid][0] = studentRecord[uid][1] = 0;
                         }
                     }
@@ -749,7 +762,7 @@ namespace LMS.Controllers
                        and Convert percentage grade to letter grade and put in db */
                     foreach (var uid in studentRecord.Keys)
                     {
-                        studentRecord[uid][2] = studentRecord[uid][2] * (100 / allCatWeight);
+                        studentRecord[uid][2] = studentRecord[uid][2] * (100.0 / allCatWeight);
                         var getGrade =
                             from g in db.EnrollmentGrade
                             where g.UId == uid && g.CId == cid
