@@ -122,7 +122,7 @@ namespace LMS.Controllers
                                 Cid = c.CId
 
                             };
-                var query2 = from enroll in db.EnrollmentGrade
+                var query2 = from enroll in db.EnrollmentGrade.DefaultIfEmpty()
                              where enroll.CId == query.ToArray()[0].Cid
                              join s in db.Students
                              on enroll.UId equals s.UId
@@ -140,7 +140,7 @@ namespace LMS.Controllers
                                  lname = us.LName,
                                  uid = us.UId,
                                  dob = us.Dob,
-                                 grade = enroll.Grade
+                                 grade = enroll.Grade == null ? "--" : enroll.Grade
                              };
 
                 return Json(query2.ToArray());
@@ -608,11 +608,13 @@ namespace LMS.Controllers
                     join c2 in db.Classes on c.CatalogId equals c2.CatalogId
                     join asc in db.AssignmentCategories on c2.CId equals asc.CId
                     join ass in db.Assignments on asc.AcId equals ass.AcId
+                    where ass.Name == asgname
                     join Submission in db.Submission on ass.AId equals Submission.AId
                     where Submission.UId == uid
                     select Submission;
 
-                if(query.ToArray().Count() != 0)
+        
+                if (query.ToArray().Count() != 0)
                 {
                     query.ToArray()[0].Score = score;
                     try
@@ -671,7 +673,7 @@ namespace LMS.Controllers
         private void GradeUpdateClass(int cid)
         {
             int allCatWeight = 0;
-            Dictionary<String, int[]> studentRecord = new Dictionary<string, int[]>();
+            Dictionary<String, double[]> studentRecord = new Dictionary<string, double[]>();
             using (db)
             {
                 /* Get all the assigment cat in a class */
@@ -713,13 +715,13 @@ namespace LMS.Controllers
                         /* Iterate every submission and put it into studentRecord */
                         foreach (var student in Assgnm.ToArray())
                         {
-                            int catTotal = 0;
-                            int catEarned = 0;
+                            double catTotal = 0;
+                            double catEarned = 0;
                             int score = student.Score ?? default(int);
 
                             if (!studentRecord.ContainsKey(student.UId))
                             {
-                                studentRecord.Add(student.UId, new int[3]); //int[0] = earned, int[1] = total, int[2] =the Total of earned/total * Weight;
+                                studentRecord.Add(student.UId, new double[3]); //int[0] = earned, int[1] = total, int[2] =the Total of earned/total * Weight;
                             }
                             
                             catTotal += student.Points;
@@ -735,6 +737,12 @@ namespace LMS.Controllers
                         foreach (var uid in studentRecord.Keys)
                         {
                             studentRecord[uid][2] += ((studentRecord[uid][0] / studentRecord[uid][1]) * catWeight);
+                            System.Diagnostics.Debug.WriteLine("----------");
+                            System.Diagnostics.Debug.WriteLine(uid + ": "  + cat.AcId + " : "+ studentRecord[uid][2]);
+                            System.Diagnostics.Debug.WriteLine("earned: " + studentRecord[uid][0]);
+                            System.Diagnostics.Debug.WriteLine("total: " + studentRecord[uid][1]);
+                            System.Diagnostics.Debug.WriteLine("----------");
+                            studentRecord[uid][0] = studentRecord[uid][1] = 0;
                         }
                     }
                     /* update total percentage grade with scaling in class 
@@ -764,8 +772,11 @@ namespace LMS.Controllers
 
         }
 
-        private string ConvertToLetter(int v)
+        private string ConvertToLetter(double v)
         {
+            System.Diagnostics.Debug.WriteLine("----------");
+            System.Diagnostics.Debug.WriteLine(v);
+            System.Diagnostics.Debug.WriteLine("----------");
             if (93 <= v && v <= 100)
             {
                 return "A";
