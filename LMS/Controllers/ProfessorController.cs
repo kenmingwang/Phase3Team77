@@ -182,7 +182,7 @@ namespace LMS.Controllers
                    {
                        aname = a.Name,
                        cname = e.Name,
-                       due = a.Due,
+                       due = a.Due.ToString("yyyy-MM-dd HH:mm:ss"),
                        submissions = (from t in a.Submission select t.Score),
                    };
 
@@ -243,7 +243,7 @@ namespace LMS.Controllers
                     {
                         aname = a.Name,
                         cname = e.Name,
-                        due = a.Due,
+                        due = a.Due.ToString("yyyy-MM-dd HH:mm:ss"),
                         submissions = (from t in a.Submission select t.Score),
                     };
  
@@ -581,7 +581,7 @@ namespace LMS.Controllers
                                 fname = u.FName,
                                 lname = u.LName,
                                 uid = u.UId,
-                                time = sub.Time,
+                                time = sub.Time.ToString("yyyy-MM-dd HH:mm:ss"),
                                 score = sub.Score
 
                             };
@@ -721,8 +721,12 @@ namespace LMS.Controllers
                                 s.Score,
                                 s.UId
                             };
-                        if (Assgnm.ToArray().Count() == 0) continue; //DO NOT COUNT if no Assignments
-
+                        if (Assgnm.ToArray().Count() == 0)
+                        {
+                            //DO NOT COUNT if no Assignments
+                            allCatWeight -= catWeight;
+                            continue; 
+                        }
                         /* Iterate every submission and put it into studentRecord */
                         foreach (var student in Assgnm.ToArray())
                         {
@@ -844,7 +848,7 @@ namespace LMS.Controllers
         {
             public string aname;
             public string cname;
-            public DateTime due;
+            public string due;
             public int submissions;
         }
 

@@ -138,14 +138,14 @@ namespace LMS.Controllers
                             where cate.CId == getStudentCid.ToArray()[0].Cid
                             join assign in db.Assignments
                             on cate.AcId equals assign.AcId
-
+                            join sub in db.Submission
+                            on assign.AId equals sub.AId
                             select new
                             {
                                 aname = assign.Name,
                                 cname = cate.Name,
-                                due = assign.Due,
-
-                                score = assign.Points
+                                due = assign.Due.ToString("yyyy-MM-dd HH:mm:ss"),
+                                score = sub.Score
                             };
 
                 return Json(query.ToArray());
@@ -227,7 +227,11 @@ namespace LMS.Controllers
                 //Submission the_as = getSubmission.SingleOrDefault();
                 getSubmission.ToArray()[0].Contents = contents;
                 getSubmission.ToArray()[0].Time = DateTime.Now;
-                getSubmission.ToArray()[0].Score = 0;
+                if(getSubmission.ToArray()[0].Score == -1) // First submission
+                {
+                    getSubmission.ToArray()[0].Score = 0;
+                }
+                
 
                 /*
                 if(the_as != null)
