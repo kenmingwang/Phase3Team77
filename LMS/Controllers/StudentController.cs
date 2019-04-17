@@ -140,12 +140,13 @@ namespace LMS.Controllers
                             on cate.AcId equals assign.AcId
                             join sub in db.Submission
                             on assign.AId equals sub.AId
+                            where sub.UId == uid
                             select new
                             {
                                 aname = assign.Name,
                                 cname = cate.Name,
                                 due = assign.Due.ToString("yyyy-MM-dd HH:mm:ss"),
-                                score = sub.Score
+                                score = sub.Score == -1 ? 0 : sub.Score
                             };
 
                 return Json(query.ToArray());
