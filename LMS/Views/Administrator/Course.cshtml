@@ -120,7 +120,8 @@
           if (!data.success) {
             alert("Unable to add class");
           }
-          LoadData();
+          //LoadData();
+          location.reload();
         },
         error: function (ex) {
           var r = jQuery.parseJSON(response.responseText);
